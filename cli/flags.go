@@ -40,8 +40,6 @@ type Flags struct {
 	YouTubeTranscript       bool              `long:"transcript" description:"Grab transcript from YouTube video and send to chat"`
 	YouTubeComments         bool              `long:"comments" description:"Grab comments from YouTube video and send to chat"`
 	DryRun                  bool              `long:"dry-run" description:"Show what would be sent to the model without actually sending it"`
-	ScrapeURL               string            `short:"u" long:"scrape_url" description:"Scrape website URL to markdown using Jina AI"`
-	ScrapeQuestion          string            `short:"q" long:"scrape_question" description:"Search question using Jina AI"`
 }
 
 // Init Initialize flags. returns a Flags struct and an error
@@ -49,11 +47,17 @@ func Init() (ret *Flags, err error) {
 	var message string
 
 	ret = &Flags{}
+
+	// fmt.Println("this is Init function")
 	parser := flags.NewParser(ret, flags.Default)
+	// fmt.Println("parser :", parser)
+
 	var args []string
 	if args, err = parser.Parse(); err != nil {
 		return
 	}
+	// fmt.Println("len(args) :", len(args))
+	// fmt.Println("args[1] :", args[1])
 
 	info, _ := os.Stdin.Stat()
 	hasStdin := (info.Mode() & os.ModeCharDevice) == 0
@@ -63,11 +67,13 @@ func Init() (ret *Flags, err error) {
 		if message, err = readStdin(); err != nil {
 			return
 		}
+		// fmt.Println("len(message) 123 : ", len(message))
 	} else if len(args) > 0 {
 		message = args[len(args)-1]
 	} else {
 		message = ""
 	}
+
 	ret.Message = message
 
 	return
@@ -75,6 +81,7 @@ func Init() (ret *Flags, err error) {
 
 // readStdin reads from stdin and returns the input as a string or an error
 func readStdin() (string, error) {
+	// fmt.Println("os.Stdin : ", os.Stdin)
 	reader := bufio.NewReader(os.Stdin)
 	var input string
 	for {
@@ -109,14 +116,14 @@ func (o *Flags) BuildChatRequest() (ret *common.ChatRequest) {
 		PatternVariables: o.PatternVariables,
 		Message:          o.Message,
 	}
-	return
-}
 
-func (o *Flags) AppendMessage(message string) {
-	if o.Message != "" {
-		o.Message = o.Message + "\n" + message
-	} else {
-		o.Message = message
-	}
+	// fmt.Println("ContextName:      :", o.Context)
+	// fmt.Println("SessionName:      :", o.Session)
+	// fmt.Println("PatternName:      :", o.Pattern)
+	// fmt.Println("PatternVariables: :", o.PatternVariables)
+	// fmt.Println("Message:          :", o.Message)
+
+	// fmt.Println(" BuildChatRequest ret:", ret)
+
 	return
 }

@@ -13,7 +13,11 @@ import (
 
 // Cli Controls the cli. It takes in the flags and runs the appropriate functions
 func Cli() (message string, err error) {
+
+	// fmt.Println("message : ", message)
+
 	var currentFlags *Flags
+
 	if currentFlags, err = Init(); err != nil {
 		// we need to reset error, because we don't want to show double help messages
 		err = nil
@@ -25,8 +29,13 @@ func Cli() (message string, err error) {
 		return
 	}
 
-	fabricDb := db.NewDb(filepath.Join(homedir, ".config/fabric"))
+	//psingh
+	// fmt.Println("currentFlags  : ", currentFlags.Message)
+	// fmt.Println("reflect.TypeOf(currentFlags)", reflect.TypeOf(currentFlags))
 
+	fabricDb := db.NewDb(filepath.Join(homedir, ".config/fabric"))
+	// fmt.Println("fabricDb path  :", filepath.Join(homedir, ".config/fabric"))
+	// fmt.Println("fabricDb :", fabricDb)
 	// if the setup flag is set, run the setup function
 	if currentFlags.Setup {
 		_ = fabricDb.Configure()
@@ -40,18 +49,26 @@ func Cli() (message string, err error) {
 		if fabric, err = Setup(fabricDb, currentFlags.SetupSkipUpdatePatterns); err != nil {
 			return
 		}
-	} else {
-		if fabric, err = core.NewFabric(fabricDb); err != nil {
-			fmt.Println("fabric can't initialize, please run the --setup procedure", err)
-			return
-		}
+	} else if fabric, err = core.NewFabric(fabricDb); err != nil {
+		fmt.Println("fabric can't initialize, please run the --setup procedure", err)
+		return
 	}
+	// fmt.Println("fabric :", fabric.ApiKey)
+	// fmt.Println("Db :", fabric.Db)
+	// fmt.Println("DefaultFolder :", fabric.DefaultFolder)
+	// fmt.Println("Models :", fabric.Models)
+	// fmt.Println("Patterns :", fabric.Patterns)
+	// os.Exit(0)
 
+	// time.Sleep(1 * time.Minute)
+	// fmt.Println("value pattern ", currentFlags.UpdatePatterns)
 	// if the update patterns flag is set, run the update patterns function
 	if currentFlags.UpdatePatterns {
 		err = fabric.PopulateDB()
 		return
 	}
+
+	// fmt.Println("currentFlags.UpdatePatterns : ", currentFlags)
 
 	if currentFlags.ChangeDefaultModel {
 		err = fabric.SetupDefaultModel()
@@ -101,6 +118,7 @@ func Cli() (message string, err error) {
 	// }
 
 	// if none of the above currentFlags are set, run the initiate chat function
+	// fmt.Println("END OF cli.go ")
 
 	if currentFlags.YouTube != "" {
 		if fabric.YouTube.IsConfigured() == false {
@@ -121,7 +139,11 @@ func Cli() (message string, err error) {
 
 			fmt.Println(transcript)
 
-			currentFlags.AppendMessage(transcript)
+			if currentFlags.Message != "" {
+				currentFlags.Message = currentFlags.Message + "\n" + transcript
+			} else {
+				currentFlags.Message = transcript
+			}
 		}
 
 		if currentFlags.YouTubeComments {
@@ -134,40 +156,15 @@ func Cli() (message string, err error) {
 
 			fmt.Println(commentsString)
 
-			currentFlags.AppendMessage(commentsString)
+			if currentFlags.Message != "" {
+				currentFlags.Message = currentFlags.Message + "\n" + commentsString
+			} else {
+				currentFlags.Message = commentsString
+			}
 		}
 
 		if currentFlags.Pattern == "" {
 			// if the pattern flag is not set, we wanted only to grab the transcript or comments
-			return
-		}
-	}
-
-	if (currentFlags.ScrapeURL != "" || currentFlags.ScrapeQuestion != "") && fabric.Jina.IsConfigured() {
-		// Check if the scrape_url flag is set and call ScrapeURL
-		if currentFlags.ScrapeURL != "" {
-			if message, err = fabric.Jina.ScrapeURL(currentFlags.ScrapeURL); err != nil {
-				return
-			}
-
-			fmt.Println(message)
-
-			currentFlags.AppendMessage(message)
-		}
-
-		// Check if the scrape_question flag is set and call ScrapeQuestion
-		if currentFlags.ScrapeQuestion != "" {
-			if message, err = fabric.Jina.ScrapeQuestion(currentFlags.ScrapeQuestion); err != nil {
-				return
-			}
-
-			fmt.Println(message)
-
-			currentFlags.AppendMessage(message)
-		}
-
-		if currentFlags.Pattern == "" {
-			// if the pattern flag is not set, we wanted only to grab the url or get the answer to the question
 			return
 		}
 	}
@@ -177,12 +174,15 @@ func Cli() (message string, err error) {
 		return
 	}
 
+	// fmt.Println("currentFlags.Stream ", currentFlags.Stream)
+	// fmt.Println("message :", message)
+
 	if message, err = chatter.Send(currentFlags.BuildChatRequest(), currentFlags.BuildChatOptions()); err != nil {
 		return
 	}
 
 	if !currentFlags.Stream {
-		fmt.Println(message)
+		fmt.Println("message :", message)
 	}
 
 	// if the copy flag is set, copy the message to the clipboard
@@ -196,6 +196,7 @@ func Cli() (message string, err error) {
 	if currentFlags.Output != "" {
 		err = fabric.CreateOutputFile(message, currentFlags.Output)
 	}
+
 	return
 }
 
@@ -211,6 +212,7 @@ func Setup(db *db.Db, skipUpdatePatterns bool) (ret *core.Fabric, err error) {
 			return
 		}
 	}
+
 	ret = instance
 	return
 }

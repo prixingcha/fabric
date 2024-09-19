@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/danielmiessler/fabric/common"
 	"github.com/danielmiessler/fabric/db"
 	"github.com/danielmiessler/fabric/vendors"
@@ -20,15 +22,27 @@ type Chatter struct {
 }
 
 func (o *Chatter) Send(request *common.ChatRequest, opts *common.ChatOptions) (message string, err error) {
+
+	// fmt.Println("request : ", request)
+	// fmt.Println("ChatOptions.Temperature : ", opts.Temperature)
+
 	var chatRequest *Chat
 	if chatRequest, err = o.NewChat(request); err != nil {
 		return
 	}
+	//psingh this is GOLD
+	// fmt.Println("chatRequest : ", chatRequest)
+	//psingh this is GOLD
 
 	var session *db.Session
 	if session, err = chatRequest.BuildChatSession(opts.Raw); err != nil {
 		return
 	}
+
+	// fmt.Println("len(session.Messages) : ", len(session.Messages))
+	// fmt.Println()
+	// fmt.Println("o.model : ", o.model)
+	// fmt.Println("context.Background() :", context.Background())
 
 	if opts.Model == "" {
 		opts.Model = o.model
@@ -47,15 +61,23 @@ func (o *Chatter) Send(request *common.ChatRequest, opts *common.ChatOptions) (m
 			fmt.Print(response)
 		}
 	} else {
-		if message, err = o.vendor.Send(context.Background(), session.Messages, opts); err != nil {
+		//psingh main Send here
+		if message, err = o.vendor.Send(
+			context.Background(), session.Messages, opts); err != nil {
 			return
 		}
+		// fmt.Println("message :", message)
+
 	}
 
 	if chatRequest.Session != nil && message != "" {
 		chatRequest.Session.Append(&common.Message{Role: goopenai.ChatMessageRoleAssistant, Content: message})
 		err = o.db.Sessions.SaveSession(chatRequest.Session)
 	}
+
+	// fmt.Println("message : ", message)
+	// fmt.Println("chatRequest.Session :", chatRequest.Session)
+	os.Exit(0)
 	return
 }
 

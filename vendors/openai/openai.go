@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/danielmiessler/fabric/common"
 	"github.com/samber/lo"
@@ -68,7 +69,10 @@ func (o *Client) ListModels() (ret []string, err error) {
 func (o *Client) SendStream(
 	msgs []*common.Message, opts *common.ChatOptions, channel chan string,
 ) (err error) {
+	fmt.Println("SendStream")
+
 	req := o.buildChatCompletionRequest(msgs, opts)
+
 	req.Stream = true
 
 	var stream *openai.ChatCompletionStream
@@ -82,13 +86,7 @@ func (o *Client) SendStream(
 	for {
 		var response openai.ChatCompletionStreamResponse
 		if response, err = stream.Recv(); err == nil {
-			if len(response.Choices) > 0 {
-				channel <- response.Choices[0].Delta.Content
-			} else {
-				channel <- "\n"
-				close(channel)
-				break
-			}
+			channel <- response.Choices[0].Delta.Content
 		} else if errors.Is(err, io.EOF) {
 			channel <- "\n"
 			close(channel)
@@ -105,19 +103,26 @@ func (o *Client) SendStream(
 func (o *Client) Send(ctx context.Context, msgs []*common.Message, opts *common.ChatOptions) (ret string, err error) {
 	req := o.buildChatCompletionRequest(msgs, opts)
 
+	fmt.Println("ctx : ", ctx)
+	// os.Exit(0)
+
+	//psingh working here
 	var resp goopenai.ChatCompletionResponse
 	if resp, err = o.ApiClient.CreateChatCompletion(ctx, req); err != nil {
 		return
 	}
-	if len(resp.Choices) > 0 {
-		ret = resp.Choices[0].Message.Content
-	}
+
+	fmt.Println(resp)
+	os.Exit(0)
+	ret = resp.Choices[0].Message.Content
+
 	return
 }
 
 func (o *Client) buildChatCompletionRequest(
 	msgs []*common.Message, opts *common.ChatOptions,
 ) (ret goopenai.ChatCompletionRequest) {
+
 	messages := lo.Map(msgs, func(message *common.Message, _ int) goopenai.ChatCompletionMessage {
 		return goopenai.ChatCompletionMessage{Role: message.Role, Content: message.Content}
 	})
@@ -127,6 +132,7 @@ func (o *Client) buildChatCompletionRequest(
 			Model:    opts.Model,
 			Messages: messages,
 		}
+
 	} else {
 		ret = goopenai.ChatCompletionRequest{
 			Model:            opts.Model,
@@ -135,6 +141,13 @@ func (o *Client) buildChatCompletionRequest(
 			PresencePenalty:  float32(opts.PresencePenalty),
 			FrequencyPenalty: float32(opts.FrequencyPenalty),
 			Messages:         messages,
+		}
+
+		for _, msg := range ret.Messages {
+			if msg.Role == "assistant" {
+
+				fmt.Printf("Role: %s, Content: %s\n", msg.Role, msg.Content)
+			}
 		}
 	}
 	return

@@ -1,0 +1,11 @@
+// var vendor string
+// var model string
+
+// // ... (some code)
+
+// if vendor == "" {
+// 	vendor = "Grocq" // DefaultVendor
+// }
+// if model == "" {
+// 	model = "llama-3.1-70b-versatile" // DefaultModel
+// }

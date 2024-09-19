@@ -14,7 +14,6 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/danielmiessler/fabric/common"
 	"github.com/danielmiessler/fabric/db"
-	"github.com/danielmiessler/fabric/jina"
 	"github.com/danielmiessler/fabric/vendors/anthropic"
 	"github.com/danielmiessler/fabric/vendors/azure"
 	"github.com/danielmiessler/fabric/vendors/dryrun"
@@ -51,7 +50,6 @@ func NewFabricBase(db *db.Db) (ret *Fabric) {
 		VendorsAll:     NewVendorsManager(),
 		PatternsLoader: NewPatternsLoader(db.Patterns),
 		YouTube:        youtube.NewYouTube(),
-		Jina:           jina.NewClient(),
 	}
 
 	label := "Default"
@@ -77,7 +75,6 @@ type Fabric struct {
 	VendorsAll *VendorsManager
 	*PatternsLoader
 	*youtube.YouTube
-	Jina *jina.Client
 
 	Db *db.Db
 
@@ -92,6 +89,7 @@ type ChannelName struct {
 
 func (o *Fabric) SaveEnvFile() (err error) {
 	// Now create the .env with all configured VendorsController info
+	fmt.Println("this is inside saveenvfile !!!!")
 	var envFileContent bytes.Buffer
 
 	o.Settings.FillEnvFileContent(&envFileContent)
@@ -102,7 +100,6 @@ func (o *Fabric) SaveEnvFile() (err error) {
 	}
 
 	o.YouTube.SetupFillEnvFileContent(&envFileContent)
-	o.Jina.SetupFillEnvFileContent(&envFileContent)
 
 	err = o.Db.SaveEnv(envFileContent.String())
 	return
@@ -118,10 +115,6 @@ func (o *Fabric) Setup() (err error) {
 	}
 
 	_ = o.YouTube.SetupOrSkip()
-
-	if err = o.Jina.SetupOrSkip(); err != nil {
-		return
-	}
 
 	if err = o.PatternsLoader.Setup(); err != nil {
 		return
@@ -191,23 +184,29 @@ func (o *Fabric) configure() (err error) {
 		return
 	}
 
-	//YouTube and Jina are not mandatory, so ignore not configured error
+	//YouTube is not mandatory, so ignore not configured error
 	_ = o.YouTube.Configure()
-	_ = o.Jina.Configure()
 
 	return
 }
 
 func (o *Fabric) GetChatter(model string, stream bool, dryRun bool) (ret *Chatter, err error) {
+	// fmt.Println("=====")
+	// fmt.Println("this is inside getchatter !!!!")
+	// fmt.Println("model is:", model)
+
 	ret = &Chatter{
 		db:     o.Db,
 		Stream: stream,
 		DryRun: dryRun,
 	}
 
+	ret.vendor = o.VendorsAll.FindByName("Groq")
+
 	if dryRun {
 		ret.vendor = dryrun.NewClient()
 		ret.model = model
+
 		if ret.model == "" {
 			ret.model = o.DefaultModel.Value
 		}
@@ -219,7 +218,17 @@ func (o *Fabric) GetChatter(model string, stream bool, dryRun bool) (ret *Chatte
 		ret.model = model
 	}
 
+	// ret.vendor = o.VendorsAll.FindByName("GroqXXXXX")
+
+	// fmt.Println("ret is:", ret)
+	// fmt.Println("o.DefaultModel.Value is ", o.DefaultModel.Value)
+	// fmt.Println(o.VendorsAll.FindByName("Groq").GetName())
+	// fmt.Println("o.VendorsAll.FindByName(Groq) is", o.VendorsAll.FindByName("Groq"))
+	fmt.Println("=====")
+
 	if ret.vendor == nil {
+		// _, file, _, ok := runtime.Caller(0)
+		// fmt.Println("this is right before showing error  ", file, "ok is:", ok)
 		err = fmt.Errorf(
 			"could not find vendor.\n Model = %s\n DefaultModel = %s\n DefaultVendor = %s",
 			model, o.DefaultModel.Value, o.DefaultVendor.Value)
