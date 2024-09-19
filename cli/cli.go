@@ -17,6 +17,7 @@ func Cli() (message string, err error) {
 	// fmt.Println("message : ", message)
 	//this is just for test
 	fmt.Println("this is just for test")
+	fmt.Println("this is  second line")
 
 	var currentFlags *Flags
 
