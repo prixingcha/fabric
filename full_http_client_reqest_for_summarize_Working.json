@@ -1,6 +1,6 @@
 curl -X POST "https://api.groq.com/openai/v1/chat/completions" \
   -H "Accept: application/json" \
-  -H "Authorization: Bearer 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" \
+  -H "Authorization: Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "llama3-8b-8192",
